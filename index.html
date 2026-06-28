@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Atap Jemuran Monitor</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.3.4/mqtt.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #38bdf8;
+      margin-bottom: 8px;
+    }
+
+    #statusKoneksi {
+      font-size: 0.75rem;
+      margin-bottom: 24px;
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: #1e293b;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      width: 100%;
+      max-width: 480px;
+      margin-bottom: 16px;
+    }
+
+    .card {
+      background: #1e293b;
+      border-radius: 16px;
+      padding: 20px;
+      text-align: center;
+      border: 1px solid #334155;
+    }
+
+    .card .label {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+
+    .card .value {
+      font-size: 1.6rem;
+      font-weight: 700;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 14px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .badge-green  { background: #14532d; color: #4ade80; }
+    .badge-red    { background: #450a0a; color: #f87171; }
+    .badge-yellow { background: #422006; color: #facc15; }
+    .badge-blue   { background: #0c4a6e; color: #38bdf8; }
+
+    .card-full {
+      background: #1e293b;
+      border-radius: 16px;
+      padding: 20px;
+      text-align: center;
+      border: 1px solid #334155;
+      width: 100%;
+      max-width: 480px;
+      margin-bottom: 16px;
+    }
+
+    .card-full .label {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 12px;
+    }
+
+    button {
+      padding: 10px 24px;
+      border-radius: 10px;
+      border: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    button:hover { opacity: 0.85; }
+    button:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .btn-auto   { background: #0284c7; color: white; }
+    .btn-manual { background: #7c3aed; color: white; }
+    .btn-buka   { background: #16a34a; color: white; }
+    .btn-tutup  { background: #dc2626; color: white; }
+
+    #lastUpdate {
+      font-size: 0.7rem;
+      color: #475569;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🏠 Atap Jemuran Monitor</h1>
+  <div id="statusKoneksi">⏳ Menghubungkan ke broker...</div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="label">Sensor Hujan</div>
+      <div class="value" id="statusHujan">--</div>
+    </div>
+    <div class="card">
+      <div class="label">Nilai LDR</div>
+      <div class="value" style="color:#38bdf8" id="nilaiLDR">--</div>
+    </div>
+    <div class="card">
+      <div class="label">Kondisi</div>
+      <div class="value" id="kondisi">--</div>
+    </div>
+    <div class="card">
+      <div class="label">Status Atap</div>
+      <div class="value" id="statusAtap">--</div>
+    </div>
+  </div>
+
+  <!-- Mode -->
+  <div class="card-full">
+    <div class="label">Mode Operasi</div>
+    <div class="value" id="modeLabel" style="margin-bottom:12px;">--</div>
+    <div class="btn-group">
+      <button class="btn-auto"   onclick="setMode('AUTO')">AUTO</button>
+      <button class="btn-manual" onclick="setMode('MANUAL')">MANUAL</button>
+    </div>
+  </div>
+
+  <!-- Kontrol Manual -->
+  <div class="card-full">
+    <div class="label">Kontrol Manual</div>
+    <div class="btn-group" style="margin-top:4px;">
+      <button class="btn-buka"  id="btnBuka"  onclick="kontrolAtap('BUKA')"  disabled>⬆ BUKA</button>
+      <button class="btn-tutup" id="btnTutup" onclick="kontrolAtap('TUTUP')" disabled>⬇ TUTUP</button>
+    </div>
+  </div>
+
+  <div id="lastUpdate">Menunggu data...</div>
+
+<script>
+  // ===== MQTT Config =====
+  const broker   = "wss://232cc13511a94d45a753f80dd7e48363.s1.eu.hivemq.cloud:8884/mqtt";
+  const mqttUser = "esp32user";
+  const mqttPass = "esp32Pass123";
+
+  const topicStatus  = "atap/status";
+  const topicKontrol = "atap/kontrol";
+  const topicMode    = "atap/mode";
+
+  // ===== Connect =====
+  const client = mqtt.connect(broker, {
+    username: mqttUser,
+    password: mqttPass,
+    clientId: "WebClient-" + Math.random().toString(16).substr(2, 8),
+    reconnectPeriod: 3000
+  });
+
+  client.on("connect", () => {
+    document.getElementById("statusKoneksi").textContent = "🟢 Terhubung ke HiveMQ";
+    document.getElementById("statusKoneksi").style.color = "#4ade80";
+    client.subscribe(topicStatus);
+    console.log("MQTT Connected, subscribe ke " + topicStatus);
+  });
+
+  client.on("error", (err) => {
+    document.getElementById("statusKoneksi").textContent = "🔴 Gagal konek: " + err.message;
+    document.getElementById("statusKoneksi").style.color = "#f87171";
+  });
+
+  client.on("disconnect", () => {
+    document.getElementById("statusKoneksi").textContent = "🔴 Terputus, reconnecting...";
+    document.getElementById("statusKoneksi").style.color = "#f87171";
+  });
+
+  // ===== Terima Data dari ESP32 =====
+  client.on("message", (topic, message) => {
+    if (topic !== topicStatus) return;
+
+    try {
+      const d = JSON.parse(message.toString());
+
+      // Hujan
+      document.getElementById("statusHujan").innerHTML =
+        d.hujan === 0
+          ? '<span class="badge badge-red">HUJAN</span>'
+          : '<span class="badge badge-green">KERING</span>';
+
+      // LDR
+      document.getElementById("nilaiLDR").textContent = d.ldr;
+
+      // Kondisi
+      let kondisi = "";
+      if (d.hujan === 0)    kondisi = '<span class="badge badge-red">Hujan</span>';
+      else if (d.ldr > 2500) kondisi = '<span class="badge badge-yellow">Mendung</span>';
+      else                   kondisi = '<span class="badge badge-green">Cerah</span>';
+      document.getElementById("kondisi").innerHTML = kondisi;
+
+      // Status Atap
+      document.getElementById("statusAtap").innerHTML =
+        d.atap === 1
+          ? '<span class="badge badge-red">TUTUP</span>'
+          : d.atap === 0
+            ? '<span class="badge badge-green">BUKA</span>'
+            : '--';
+
+      // Mode
+      const isManual = d.mode === 1;
+      document.getElementById("modeLabel").innerHTML =
+        isManual
+          ? '<span class="badge badge-yellow">MANUAL</span>'
+          : '<span class="badge badge-blue">AUTO</span>';
+
+      document.getElementById("btnBuka").disabled  = !isManual;
+      document.getElementById("btnTutup").disabled = !isManual;
+
+      document.getElementById("lastUpdate").textContent =
+        "Update terakhir: " + new Date().toLocaleTimeString("id-ID");
+
+    } catch(e) {
+      console.error("Parse error:", e);
+    }
+  });
+
+  // ===== Kirim Perintah =====
+  function setMode(mode) {
+    client.publish(topicMode, mode);
+    console.log("Publish mode: " + mode);
+  }
+
+  function kontrolAtap(perintah) {
+    client.publish(topicKontrol, perintah);
+    console.log("Publish kontrol: " + perintah);
+  }
+</script>
+
+</body>
+</html>
