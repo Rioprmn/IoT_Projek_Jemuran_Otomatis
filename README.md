@@ -144,17 +144,6 @@ Variabel yang dipakai bersama antar task (`g_statusHujan`, `g_nilaiLDR`, `g_stat
 
 ---
 
-## 📂 Struktur Project
-
-```
-atap-jemuran-otomatis/
-├── firmware/
-│   └── atap_jemuran.ino     # Kode ESP32 (FreeRTOS + MQTT)
-├── web/
-│   └── index.html            # Dashboard monitoring & kontrol
-└── README.md
-```
-
 ---
 
 ## ✅ Status Pengujian
@@ -183,7 +172,7 @@ atap-jemuran-otomatis/
 
 ## 👤 Penulis
 
-**Rio Permana**
+**Kelompok 5**
 Tugas UAS — Embedded System
 
 ## 📄 Lisensi
