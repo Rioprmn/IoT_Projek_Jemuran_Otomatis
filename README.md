@@ -1,4 +1,4 @@
-# 🏠 Atap Jemuran Otomatis — ESP32 + FreeRTOS + MQTT
+# 🏠 Atap Jemuran Otomatis — ESP32 + RTOS + MQTT
 
 Sistem embedded berbasis **ESP32** untuk membuka/menutup atap jemuran secara otomatis berdasarkan kondisi cuaca (hujan & mendung), dilengkapi kontrol manual dan monitoring real-time melalui **web dashboard** via protokol **MQTT**.
 
