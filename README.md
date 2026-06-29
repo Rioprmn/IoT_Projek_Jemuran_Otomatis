@@ -27,32 +27,6 @@ Project ini dibuat sebagai Tugas Akhir (UAS) mata kuliah Embedded System.
 
 ---
 
-## 🏗️ Arsitektur Sistem
-
-Menggunakan pendekatan **decoupled architecture** — firmware ESP32 dan web dashboard terpisah, dijembatani oleh broker MQTT:
-
-```
-┌─────────────────┐        MQTT (TLS, port 8883)        ┌──────────────────┐
-│      ESP32       │ ───────────────────────────────────▶ │                  │
-│  (Sensor+Servo)  │   publish → atap/status (JSON)       │   HiveMQ Cloud   │
-│                  │ ◀─────────────────────────────────── │   (Broker MQTT)  │
-│                  │   subscribe ← atap/kontrol            │                  │
-│                  │   subscribe ← atap/mode               │                  │
-└─────────────────┘                                       └──────────────────┘
-                                                                    ▲
-                                                                    │ MQTT over WSS (port 8884)
-                                                                    ▼
-                                                           ┌──────────────────┐
-                                                           │  Web Dashboard   │
-                                                           │  (HTML/CSS/JS)   │
-                                                           └──────────────────┘
-```
-
-Keuntungan arsitektur ini:
-- Tidak ada masalah CORS (komunikasi lewat broker, bukan langsung HTTP)
-- Web dashboard bisa di-hosting di mana saja (termasuk GitHub Pages)
-- ESP32 dan web client tidak perlu berada di jaringan yang sama
-
 ---
 
 ## 🔧 Hardware
