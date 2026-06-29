@@ -53,7 +53,7 @@ Project ini dibuat sebagai Tugas Akhir (UAS) mata kuliah Embedded System.
 - `WiFiClientSecure` — koneksi TLS ke broker (bawaan core ESP32)
 
 **Web Dashboard:**
-- HTML / CSS / JavaScript murni
+- HTML / CSS / JavaScript
 - [`MQTT.js`](https://github.com/mqttjs/MQTT.js) (via CDN) — client MQTT di browser (WebSocket)
 
 **Broker MQTT:**
