@@ -39,7 +39,7 @@ Project ini dibuat sebagai Tugas Akhir (UAS) mata kuliah Embedded System.
 
 **Posisi servo:**
 - Buka atap → `0°`
-- Tutup atap → `180°`
+- Tutup atap → `90°`
 
 **Threshold mendung:** nilai LDR > `2500`
 
